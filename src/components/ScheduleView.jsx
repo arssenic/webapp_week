@@ -17,8 +17,17 @@ const ScheduleView = ({ schedule, theme, uid, addToSchedule, setSchedule, allowD
                         >
                             +
                         </button>
-                        <button onClick={() => setSchedule(s => ({ ...s, [day]: [] }))} className="px-3 py-1 border rounded-lg text-sm hover:bg-gray-100">
-                            Clear
+                        <button
+                          onClick={() =>
+                            setSchedule(s => {
+                              const copy = { ...s };
+                              delete copy[day]; 
+                              return copy;
+                            })
+                          }
+                          className="px-3 py-1 border rounded-lg text-sm hover:bg-gray-100"
+                        >
+                          Clear
                         </button>
                     </div>
                 </div>

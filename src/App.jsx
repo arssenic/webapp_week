@@ -5,6 +5,8 @@ import ActivityList from "./components/ActivityList";
 import ScheduleView from "./components/ScheduleView";
 import PlanTools from "./components/PlanTools";
 import Notification from './components/Notification'; 
+import { toPng } from "html-to-image";
+import PosterCard from "./components/PosterCard";
 
 const SAMPLE_ACTIVITIES = [
   { id: "a1", title: "Brunch", cat: "Food", est: "1.5h", vibe: "Relaxed" },
@@ -64,7 +66,7 @@ export default function App() {
     }
   });
 
-    const [reminders, setReminders] = useState(() => {
+  const [reminders, setReminders] = useState(() => {
     try {
       const raw = localStorage.getItem("wg_reminders");
       return raw ? JSON.parse(raw) : [];
@@ -78,6 +80,9 @@ export default function App() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ time: "", vibe: "", est: "" });
 
+  // 🔥 NEW: message for Notification popup
+  const [activeMessage, setActiveMessage] = useState(null);
+
   // --- Effects for Persistence ---
   useEffect(() => {
     localStorage.setItem("wg_activities", JSON.stringify(activities));
@@ -87,11 +92,11 @@ export default function App() {
     localStorage.setItem("wg_schedule", JSON.stringify(schedule));
   }, [schedule]);
 
-    useEffect(() => {
+  useEffect(() => {
     localStorage.setItem("wg_reminders", JSON.stringify(reminders));
   }, [reminders]);
-  // --- Logic and Handler Functions ---
 
+  // --- Logic and Handler Functions ---
   function addActivity({ title, cat = "General", est = "1h", vibe = "Neutral" }) {
     const a = { id: uid("act_"), title, cat, est, vibe };
     setActivities((s) => [a, ...s]);
@@ -100,14 +105,28 @@ export default function App() {
 
   function deleteActivity(activityId) {
     if (window.confirm("Are you sure you want to permanently delete this activity? This cannot be undone.")) {
-        setActivities(prevActivities => prevActivities.filter(a => a.id !== activityId));
+      setActivities(prevActivities => prevActivities.filter(a => a.id !== activityId));
     }
   }
 
   function addToSchedule(day, activity) {
-    const instance = { ...activity, id: uid("sch_"), time: "09:00", vibe: activity.vibe || "Neutral" };
+    const instance = { 
+      ...activity, 
+      id: uid("sch_"), 
+      time: activity.time || "09:00", 
+      vibe: activity.vibe || "Neutral" 
+    };
     setSchedule((s) => ({ ...s, [day]: [...(s[day] || []), instance] }));
-    setReminders(r => [...r, { id: instance.id, title: instance.title, day }]);
+
+    // 🔥 NEW: calculate exact reminder time
+    const [hours, minutes] = (instance.time || "09:00").split(":").map(Number);
+    const when = new Date();
+    when.setHours(hours, minutes, 0, 0);
+
+    setReminders(r => [
+      ...r, 
+      { id: instance.id, title: instance.title, day, time: instance.time, when: when.getTime() }
+    ]);
   }
 
   function removeFromSchedule(day, activityId) {
@@ -145,7 +164,7 @@ export default function App() {
     }
     if (payload.type === "schedule_item") {
       const { fromDay, activityId } = payload;
-      if (fromDay === day) return; // Prevent dropping in the same list for now
+      if (fromDay === day) return; 
       const item = schedule[fromDay].find((a) => a.id === activityId);
       if (!item) return;
       removeFromSchedule(fromDay, activityId);
@@ -168,30 +187,23 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
-  function sharePlanAsText() {
-    let planText = "My Weekendly Plan:\n\n";
-    for (const day of Object.keys(schedule).sort()) {
-      planText += `--- ${day.toUpperCase()} ---\n`;
-      const sortedActivities = [...schedule[day]].sort((a, b) => (a.time || "").localeCompare(b.time || ""));
-      if (sortedActivities.length === 0) {
-        planText += "No activities planned.\n\n";
-      } else {
-        sortedActivities.forEach(item => {
-          planText += `- ${item.time || 'All day'}: ${item.title} (${item.vibe})\n`;
-        });
-        planText += "\n";
-      }
-    }
-    navigator.clipboard.writeText(planText).then(() => {
-      alert("Weekend plan copied to clipboard!");
-    }).catch(() => alert("Could not copy plan."));
-  }
+  const sharePlanAsPoster = () => {
+  const node = document.getElementById("poster-card");
+  if (!node) return;
+
+  toPng(node).then((dataUrl) => {
+    const link = document.createElement("a");
+    link.download = "plan-poster.png";
+    link.href = dataUrl;
+    link.click();
+  });
+};
 
   function clearSchedule() {
     if (!window.confirm("Are you sure you want to clear the whole schedule?")) return;
     const cleared = {};
     Object.keys(schedule).forEach(day => {
-        cleared[day] = [];
+      cleared[day] = [];
     });
     setSchedule(cleared);
     setReminders([]);
@@ -229,6 +241,23 @@ export default function App() {
     setEditingId(null);
   }
 
+  // 🔥 NEW: setup timers for reminders
+  useEffect(() => {
+    const now = Date.now();
+
+    const timers = reminders.map(rem => {
+      const msUntil = rem.when - now - 5 * 60 * 1000; // 5 minutes before
+      if (msUntil > 0) {
+        return setTimeout(() => {
+          setActiveMessage(`Reminder: "${rem.title}" starts at ${rem.time}`);
+        }, msUntil);
+      }
+      return null;
+    });
+
+    return () => timers.forEach(t => t && clearTimeout(t));
+  }, [reminders]);
+
   // --- Render ---
   const theme = themeConfig[selectedTheme];
 
@@ -240,10 +269,12 @@ export default function App() {
         theme={theme}
         exportPlan={exportPlan}
       />
-      <Notification reminders={reminders} clearReminders={clearReminders} />
+
+      {/* 🔥 Notification Popup */}
+      <Notification message={activeMessage} onClose={() => setActiveMessage(null)} />
 
       <div className="max-w-5xl mx-auto mb-6">
-          <WeatherWidget />
+        <WeatherWidget />
       </div>
 
       <main className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -259,38 +290,43 @@ export default function App() {
           schedule={schedule}
         />
         <div className="md:col-span-2 flex flex-col gap-6">
-            <ScheduleView
-              schedule={schedule}
-              theme={theme}
-              uid={uid}
-              addToSchedule={addToSchedule}
-              setSchedule={setSchedule}
-              allowDrop={allowDrop}
-              onDropOnDay={onDropOnDay}
-              editingId={editingId}
-              setEditingId={setEditingId}
-              form={form}
-              setForm={setForm}
-              saveEdit={saveEdit}
-              startEditing={startEditing}
-              moveWithinSchedule={moveWithinSchedule}
-              removeFromSchedule={removeFromSchedule}
-              onDragStart={onDragStart}
-            />
-            <PlanTools
-                theme={theme}
-                clearSchedule={clearSchedule}
-                exportPlan={exportPlan}
-                sharePlanAsText={sharePlanAsText}
-                addDay={addDay}
-            />
+          <ScheduleView
+            schedule={schedule}
+            theme={theme}
+            uid={uid}
+            addToSchedule={addToSchedule}
+            setSchedule={setSchedule}
+            allowDrop={allowDrop}
+            onDropOnDay={onDropOnDay}
+            editingId={editingId}
+            setEditingId={setEditingId}
+            form={form}
+            setForm={setForm}
+            saveEdit={saveEdit}
+            startEditing={startEditing}
+            moveWithinSchedule={moveWithinSchedule}
+            removeFromSchedule={removeFromSchedule}
+            onDragStart={onDragStart}
+          />
+          <PlanTools
+            theme={theme}
+            clearSchedule={clearSchedule}
+            exportPlan={exportPlan}
+            sharePlanAsPoster={sharePlanAsPoster}
+            addDay={addDay}
+          />
         </div>
       </main>
 
       <footer className="max-w-5xl mx-auto mt-6 text-sm text-gray-600 text-center">
         Weekendly App
       </footer>
+      <div
+        id="poster-card"
+        className="absolute opacity-0 -z-50 pointer-events-none"
+      >
+        <PosterCard schedule={schedule} />
+      </div>
     </div>
   );
 }
-
