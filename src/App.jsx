@@ -22,24 +22,24 @@ function uid(prefix = "id_") {
 
 const themeConfig = {
   default: {
-    bg: "from-gray-100 to-slate-200",
-    card: "bg-white/80 backdrop-blur-sm",
-    accent: "bg-blue-500 hover:bg-blue-600",
+    bg: "from-slate-50 via-blue-50 to-indigo-100",
+    card: "bg-white/90 backdrop-blur-md border border-white/50",
+    accent: "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg",
   },
   lazy: {
-    bg: "from-pink-100 to-purple-200",
-    card: "bg-pink-50/80 backdrop-blur-sm",
-    accent: "bg-purple-500 hover:bg-purple-600",
+    bg: "from-pink-50 via-rose-50 to-purple-100",
+    card: "bg-pink-50/90 backdrop-blur-md border border-pink-200/50",
+    accent: "bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 shadow-lg",
   },
   adventure: {
-    bg: "from-green-200 to-emerald-300",
-    card: "bg-green-50/80 backdrop-blur-sm",
-    accent: "bg-emerald-600 hover:bg-emerald-700",
+    bg: "from-green-50 via-emerald-50 to-teal-100",
+    card: "bg-green-50/90 backdrop-blur-md border border-green-200/50",
+    accent: "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg",
   },
   family: {
-    bg: "from-yellow-100 to-orange-200",
-    card: "bg-yellow-50/80 backdrop-blur-sm",
-    accent: "bg-orange-500 hover:bg-orange-600",
+    bg: "from-amber-50 via-yellow-50 to-orange-100",
+    card: "bg-yellow-50/90 backdrop-blur-md border border-yellow-200/50",
+    accent: "bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 shadow-lg",
   },
 };
 
@@ -262,7 +262,14 @@ export default function App() {
   const theme = themeConfig[selectedTheme];
 
   return (
-    <div className={`min-h-screen p-4 md:p-6 bg-gradient-to-br ${theme.bg}`}>
+    <div className={`min-h-screen p-4 md:p-6 bg-gradient-to-br ${theme.bg} relative`}>
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-pink-200/30 to-yellow-200/30 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="relative z-10">
       <Header
         selectedTheme={selectedTheme}
         setSelectedTheme={setSelectedTheme}
@@ -274,7 +281,7 @@ export default function App() {
       <Notification message={activeMessage} onClose={() => setActiveMessage(null)} />
 
       <div className="max-w-5xl mx-auto mb-6">
-        <WeatherWidget />
+        <WeatherWidget schedule={schedule} />
       </div>
 
       <main className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -321,9 +328,10 @@ export default function App() {
       <footer className="max-w-5xl mx-auto mt-6 text-sm text-gray-600 text-center">
         Weekendly App
       </footer>
+      </div>
       <div
         id="poster-card"
-        className="absolute opacity-0 -z-50 pointer-events-none"
+        className="fixed top-0 left-0 opacity-0 pointer-events-none z-[-1000]"
       >
         <PosterCard schedule={schedule} />
       </div>
