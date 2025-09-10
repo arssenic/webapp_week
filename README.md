@@ -49,8 +49,6 @@ The project follows a professional and scalable structure:
 /src
 ├── assets/ # Static assets like images
 ├── components/ # Reusable React components
-├── constants/ # App-wide constants (e.g., sample data, themes)
-├── hooks/ # Custom React hooks (e.g., useLocalStorage)
 ├── App.jsx # Main application component (state management)
 ├── index.css # Global styles
 └── main.jsx # Application entry point
