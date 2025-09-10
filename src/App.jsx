@@ -5,7 +5,7 @@ import ActivityList from "./components/ActivityList";
 import ScheduleView from "./components/ScheduleView";
 import PlanTools from "./components/PlanTools";
 import Notification from './components/Notification'; 
-import { toPng } from "html-to-image";
+import html2canvas from "html2canvas";
 import PosterCard from "./components/PosterCard";
 
 const SAMPLE_ACTIVITIES = [
@@ -188,16 +188,52 @@ export default function App() {
   }
 
   const sharePlanAsPoster = () => {
-  const node = document.getElementById("poster-card");
-  if (!node) return;
+    const node = document.getElementById("poster-card");
+    if (!node) return;
 
-  toPng(node).then((dataUrl) => {
-    const link = document.createElement("a");
-    link.download = "plan-poster.png";
-    link.href = dataUrl;
-    link.click();
-  });
-};
+    // Temporarily make the poster visible for capture
+    node.style.position = "fixed";
+    node.style.top = "0";
+    node.style.left = "0";
+    node.style.opacity = "1";
+    node.style.zIndex = "9999";
+    node.style.pointerEvents = "auto";
+    
+    // Wait a moment for styles to apply
+    setTimeout(() => {
+      html2canvas(node, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        width: 600,
+        height: node.scrollHeight
+      }).then((canvas) => {
+        // Hide the poster again
+        node.style.position = "fixed";
+        node.style.top = "0";
+        node.style.left = "0";
+        node.style.opacity = "0";
+        node.style.zIndex = "-1000";
+        node.style.pointerEvents = "none";
+        
+        // Download the image
+        const link = document.createElement("a");
+        link.download = `weekendly-plan-${new Date().toISOString().slice(0, 10)}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+      }).catch((error) => {
+        console.error('Error generating poster:', error);
+        // Hide the poster again even if there's an error
+        node.style.position = "fixed";
+        node.style.top = "0";
+        node.style.left = "0";
+        node.style.opacity = "0";
+        node.style.zIndex = "-1000";
+        node.style.pointerEvents = "none";
+      });
+    }, 100);
+  };
 
   function clearSchedule() {
     if (!window.confirm("Are you sure you want to clear the whole schedule?")) return;

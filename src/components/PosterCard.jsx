@@ -1,19 +1,19 @@
 import React from "react";
 
 const PosterCard = ({ schedule }) => (
-  <div className="w-[600px] bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-3xl shadow-2xl p-8 font-sans border border-gray-200">
+  <div className="w-[600px] bg-white rounded-3xl shadow-2xl p-8 font-sans border border-gray-200" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
     <div className="text-center mb-8">
-      <h2 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+      <h2 className="text-3xl font-bold text-indigo-600 mb-2">
         ✨ My Weekend Plan ✨
       </h2>
-      <div className="w-24 h-1 bg-gradient-to-r from-indigo-400 to-purple-400 mx-auto rounded-full"></div>
+      <div className="w-24 h-1 bg-indigo-400 mx-auto rounded-full"></div>
     </div>
     
     <div className="space-y-6">
       {Object.keys(schedule).map((day) => (
-        <div key={day} className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-100">
+        <div key={day} className="bg-gray-50 rounded-2xl p-6 shadow-lg border border-gray-100">
           <h3 className="text-xl font-bold text-indigo-700 capitalize mb-4 flex items-center">
-            <span className="w-3 h-3 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full mr-3"></span>
+            <span className="w-3 h-3 bg-indigo-400 rounded-full mr-3"></span>
             {day}
           </h3>
           {schedule[day].length === 0 ? (
@@ -21,7 +21,7 @@ const PosterCard = ({ schedule }) => (
           ) : (
             <div className="space-y-3">
               {schedule[day].map((item, index) => (
-                <div key={item.id} className="flex items-center bg-gradient-to-r from-gray-50 to-indigo-50 rounded-xl p-4 border-l-4 border-indigo-400">
+                <div key={item.id} className="flex items-center bg-white rounded-xl p-4 border-l-4 border-indigo-400 shadow-sm">
                   <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm mr-4">
                     {index + 1}
                   </div>
